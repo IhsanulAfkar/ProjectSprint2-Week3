@@ -50,13 +50,13 @@ func (h PatientController) CreatePatient(c *gin.Context) {
 	}
 	// check if identity exist
 	conn := db.CreateConn()
-	res, _ := conn.Exec("SELECT * FROM patient WHERE \"identityNumber\" = $1 ", patientForm.IdentityNumber)
+	res, _ := conn.Exec("SELECT * FROM patient WHERE \"identityNumber\" = $1 OR \"phoneNumber\" = $2", patientForm.IdentityNumber, patientForm.PhoneNumber)
 	if rows,_:= res.RowsAffected(); rows > 0 {
-		c.JSON(409, gin.H{"message":"identityNumber exist"})
+		c.JSON(409, gin.H{"message":"identityNumber or phoneNumber already exist"})
 		return
 	}
 
-	query := `INSERT INTO patient ("identityNumber", name, "phoneNumber", "birthDate", gender, "identityCardScanning") VALUES ($1,$2,$3,$4,$5,$6)`
+	query := `INSERT INTO patient ("identityNumber", name, "phoneNumber", "birthDate", gender, "identityCardScanImg") VALUES ($1,$2,$3,$4,$5,$6)`
 	res, err := conn.Exec(query, patientForm.IdentityNumber, patientForm.Name, patientForm.PhoneNumber, patientForm.BirthDate, patientForm.Gender, patientForm.IdentityCardScanImg)
 	if err != nil {
 		fmt.Println(err.Error())

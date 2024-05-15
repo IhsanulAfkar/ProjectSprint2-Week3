@@ -8,9 +8,9 @@ import (
 )
 
 func CheckNIP(conn *sqlx.DB, nip int64) bool {
-	query := "SELECT EXISTS (SELECT 1 FROM admin WHERE nip = $1 UNION SELECT 1 FROM nurse WHERE nip = $2) AS nip_exists"
+	query := "SELECT EXISTS (SELECT 1 FROM public.user WHERE nip = $1) AS nip_exists"
 	var isExist bool
-	err := conn.QueryRow(query,nip,nip).Scan(&isExist)
+	err := conn.QueryRow(query,nip).Scan(&isExist)
 	if err!= nil{
 		fmt.Println(err.Error())
 		return false

@@ -3,8 +3,6 @@ package middleware
 import (
 	"Week3/db"
 	"Week3/helper/jwt"
-	"Week3/models"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -42,11 +40,16 @@ func AdminAuthMiddleware(c *gin.Context) {
 	}
 	// find user
 	conn := db.CreateConn()
-	var admin models.Admin
-	err = conn.QueryRowx("SELECT * FROM admin WHERE id = $1 LIMIT 1",id).StructScan(&admin)
-	if err != nil && err == sql.ErrNoRows{
+	res, err := conn.Exec("SELECT 1 FROM public.user WHERE nip = $1 LIMIT 1",id.Nip)
+	if err != nil{
+		fmt.Println(err.Error())
+		c.AbortWithStatusJSON(500, gin.H{
+			"message":"server error"})
+			return
+		}
+	if rows,_:=res.RowsAffected();rows == 0 {
 		c.AbortWithStatusJSON(404, gin.H{
-			"message":"admin not found"})
+			"message":"user not found"})
 			return
 	}
 	c.Set("userNip",id.Nip)
@@ -62,6 +65,7 @@ func AllAuthMiddleware(c *gin.Context) {
 	}
 	id, err := jwt.ParseToken(token)
 	if err != nil {
+		fmt.Println(err.Error())
 		c.AbortWithStatusJSON(401, gin.H{
 			"message":err.Error()})
 		return
@@ -70,11 +74,10 @@ func AllAuthMiddleware(c *gin.Context) {
 	// find user
 	conn := db.CreateConn()
 	var isExists bool
-	err = conn.QueryRow("SELECT EXISTS (SELECT 1 FROM admin WHERE id = $1 UNION SELECT 1 FROM nurse WHERE id = $2) AS is_exists",id).Scan(&isExists)
-	if err != nil && err == sql.ErrNoRows{
-		c.AbortWithStatusJSON(404, gin.H{
-			"message":"user not found"})
-			return
+	err = conn.QueryRow("SELECT EXISTS (SELECT 1 FROM public.user WHERE nip = $1) AS is_exists",id.Nip).Scan(&isExists)
+	if err != nil || !isExists{
+		c.AbortWithStatusJSON(404, gin.H{"message":"user not found"})
+		return
 	}
 	fmt.Println("token")
 	fmt.Println(id)

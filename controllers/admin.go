@@ -8,6 +8,7 @@ import (
 	"Week3/helper/jwt"
 	"Week3/helper/validator"
 	"Week3/models"
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -50,10 +51,11 @@ func (h AdminController) SignUp(c *gin.Context) {
 		return
 	}
 	hashed_password, _ := hash.HashPassword(adminRegister.Password)
-	query := "INSERT INTO admin (nip, name, password) VALUES ($1, $2, $3) RETURNING *"
-	var admin models.Admin
+	query := "INSERT INTO public.user (nip, name, password) VALUES ($1, $2, $3) RETURNING *"
+	var admin models.User
 	err = conn.QueryRowx(query, nip.ToInt,adminRegister.Name, hashed_password).StructScan(&admin)
 	if err != nil {
+		fmt.Println(err.Error())
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
@@ -86,14 +88,18 @@ func (h AdminController) SignIn(c *gin.Context){
 		c.JSON(404,gin.H{"message":"user not found"})
 		return
 	}
-	var admin models.Admin
+	var admin models.User
 	conn := db.CreateConn()
-	err = conn.QueryRowx("SELECT * FROM admin WHERE nip = $1",adminLogin.Nip).StructScan(&admin)
+	err = conn.QueryRowx("SELECT * FROM public.user WHERE nip = $1",adminLogin.Nip).StructScan(&admin)
 	if err != nil {
+		if err == sql.ErrNoRows{
+			c.JSON(404, gin.H{"message":"user not found"})
+			return
+		}
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
-	if !hash.CheckPasswordHash(adminLogin.Password, admin.Password){
+	if !hash.CheckPasswordHash(adminLogin.Password, *admin.Password){
 		c.JSON(400, gin.H{"message":"invalid password"})
 		return
 	}
@@ -135,9 +141,7 @@ func (h AdminController) GetAllUsers(c *gin.Context) {
 	if createdAt != "asc" && createdAt != "desc"{
 		createdAt = ""
 	}
-	adminQuery := "SELECT id, nip, name, \"createdAt\" FROM admin"
-	nurseQuery := "SELECT id, nip, name, \"createdAt\" FROM nurse"
-	baseQuery := "SELECT * FROM ( "+adminQuery+" UNION ALL "+nurseQuery+") AS user_result"
+	baseQuery := "SELECT id, nip, name, \"createdAt\" FROM public.user"
 
 	var args []interface{}
 	var queryParams []string

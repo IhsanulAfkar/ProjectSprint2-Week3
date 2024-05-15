@@ -4,9 +4,11 @@ import (
 	"Week3/db"
 	"Week3/forms"
 	"Week3/helper/validator"
+	"Week3/models"
 	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -66,42 +68,93 @@ func (h RecordController) CreateRecord(c *gin.Context){
 	c.JSON(201, gin.H{"message":"record created successfully"})
 }
 
-// func (h RecordController) GetAllRecord(c *gin.Context){
-// 	limit, errLimit := strconv.Atoi(c.DefaultQuery("limit", "5"))
-// 	if errLimit != nil || limit < 0 {
-// 		limit = 5
-// 	}
-// 	offset, errOffset := strconv.Atoi(c.DefaultQuery("offset", "0"))
-// 	if errOffset != nil || offset < 0 {
-// 		offset = 0
-// 	}
-// 	identityNumber := c.Query("identityNumber")
+func (h RecordController) GetAllRecord(c *gin.Context){
+	limit, errLimit := strconv.Atoi(c.DefaultQuery("limit", "5"))
+	if errLimit != nil || limit < 0 {
+		limit = 5
+	}
+	offset, errOffset := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if errOffset != nil || offset < 0 {
+		offset = 0
+	}
+	identityNumber := c.Query("identityNumber")
 	
-// 	identityInt, err := strconv.ParseInt(identityNumber, 10,64)
-// 	if err != nil{
-// 		identityNumber = ""
-// 	}
-// 	userId := c.Query("userId")
-// 	nip := c.Query("nip")
-// 	createdAt := c.Query("createdAt")
-// 	nipInt, err := strconv.ParseInt(nip, 10, 64)
-// 	if err!= nil {
-// 		nip = ""
-// 	}
-// 	_, err = validator.ExtractNIP(nipInt)
-// 	if err !=nil{
-// 		nip = ""
-// 	}
-// 	if createdAt != "asc" && createdAt != "desc"{
-// 		createdAt = ""
-// 	}
-// 	baseQuery := "SELECT * FROM record"
-// 	var args []interface{}
-// 	var queryParams []string
-// 	argIdx := 1
-// 	if userId != ""{
-// 		queryParams = append(queryParams, " id::text = $"+strconv.Itoa(argIdx) +" ") 
-// 		args = append(args, userId)
-// 		argIdx += 1
-// 	}
-// }
+	identityInt, err := strconv.ParseInt(identityNumber, 10,64)
+	
+	if err != nil{
+		identityNumber = ""
+	}
+	userId := c.Query("userId")
+	nip := c.Query("nip")
+	createdAt := c.Query("createdAt")
+	nipInt, err := strconv.ParseInt(nip, 10, 64)
+	if err!= nil {
+		nip = ""
+	}
+	_, err = validator.ExtractNIP(nipInt)
+	if err !=nil{
+		nip = ""
+	}
+	if createdAt != "asc" && createdAt != "desc"{
+		createdAt = ""
+	}
+	baseQuery := `select record."identityNumber" as "identityNumber", patient."phoneNumber" as "phoneNumber", patient.name as "identityName",
+	patient."birthDate" as "birthDate", patient.gender as gender,
+	patient."identityCardScanImg" as "identityCardScanImg", 
+	record.symptoms, record.medications, record."createdAt", public.user.nip as nip, public.user.name as "userName", public.user.id as "userId"
+	from record join public.user on record.nip = public.user.nip join patient on record."identityNumber" = patient."identityNumber"`
+	var args []interface{}
+	var queryParams []string
+	argIdx := 1
+	if userId != ""{
+		queryParams = append(queryParams, " public.user.id::text = $"+strconv.Itoa(argIdx) +" ") 
+		args = append(args, userId)
+		argIdx += 1
+	}
+	if nip != "" {
+		queryParams = append(queryParams, " public.user.nip = $"+strconv.Itoa(argIdx) +" ") 
+		args = append(args, nipInt)
+		argIdx += 1
+	}
+	if identityNumber != ""{
+		queryParams = append(queryParams, " record.\"identityNumber\" = $"+strconv.Itoa(argIdx) +" ") 
+		args = append(args, identityInt)
+		argIdx += 1
+	}
+	if len(queryParams) > 0 {
+		allQuery := strings.Join(queryParams, " AND")
+		baseQuery += " WHERE " + allQuery
+	}
+	baseQuery += " ORDER BY "
+	if createdAt == "" {
+		baseQuery += " \"createdAt\" DESC"
+	} else {
+		if createdAt == "asc"{
+			baseQuery += " \"createdAt\" ASC"
+		}
+	}
+	baseQuery +=  " LIMIT " + strconv.Itoa(limit) + " OFFSET " + strconv.Itoa(offset)
+	conn := db.CreateConn()
+	fmt.Println(baseQuery)
+	records := make([]models.GetRecord,0)
+	rows, err := conn.Query(baseQuery, args...)
+	if err != nil {
+		fmt.Println(err.Error())
+		c.JSON(500, gin.H{"message":"server error"})
+		return
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var record models.GetRecord
+		err = rows.Scan(&record.IdentityDetail.IdentityNumber, &record.IdentityDetail.PhoneNumber, &record.IdentityDetail.Name, &record.IdentityDetail.BirthDate, &record.IdentityDetail.Gender, &record.IdentityDetail.IdentityCardScanImg, &record.Symptoms, &record.Medications, &record.CreatedAt, &record.CreatedBy.Nip, &record.CreatedBy.Name, &record.CreatedBy.UserId)
+		if err != nil {
+			fmt.Println(err.Error())
+			c.JSON(500, gin.H{"message":"server error"})
+			return
+		}
+		records = append(records, record)
+	}
+	// rapiin data
+	
+	c.JSON(200, gin.H{"message":"success","data":records})
+}	

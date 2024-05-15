@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS "nurse";
+DROP TABLE IF EXISTS "user";

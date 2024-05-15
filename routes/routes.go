@@ -2,10 +2,7 @@ package routes
 
 import (
 	"Week3/controllers"
-	"Week3/db"
 	"Week3/middleware"
-	"Week3/models"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,13 +15,8 @@ func Init() *gin.Engine {
 	mediaController := new(controllers.MediaController)
 	router := gin.New()
 	router.GET("/", func(c *gin.Context) {
-		conn := db.CreateConn()
-		var listAdmin []models.Admin
-		err := conn.Select(&listAdmin,"SELECT * FROM admin")
-		if err != nil{
-			fmt.Println(err.Error())
-		}
-		c.JSON(200,gin.H{"data":listAdmin})
+		
+		c.String(200,"hello world")
 	})
 	v1 := router.Group("/v1")
 
@@ -59,6 +51,7 @@ func Init() *gin.Engine {
 			record := medical.Group("/record")
 			{
 				record.POST("/", recordController.CreateRecord)
+				record.GET("/", recordController.GetAllRecord)
 			}
 			v1.POST("/image",mediaController.UploadImage)
 		}

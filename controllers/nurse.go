@@ -48,8 +48,8 @@ func (h NurseController) CreateNurse(c *gin.Context){
 		c.JSON(409, gin.H{"message":"cannot have duplicate nip"})
 		return
 	}
-	query := "INSERT INTO nurse (nip, name, \"identityCardScanning\") VALUES ($1, $2, $3) RETURNING *"
-	var nurse models.Nurse
+	query := "INSERT INTO public.user (nip, name, \"identityCardScanImg\") VALUES ($1, $2, $3) RETURNING *"
+	var nurse models.User
 	err = conn.QueryRowx(query,nip.ToInt, nurseRegister.Name, nurseRegister.IdentityCardScanImg).StructScan(&nurse)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -83,9 +83,9 @@ func (h NurseController) NurseLogin(c *gin.Context){
 		c.JSON(404,gin.H{"message":"nurse not found"})
 		return
 	}
-	var nurse models.Nurse
+	var nurse models.User
 	conn := db.CreateConn()
-	err = conn.QueryRowx("SELECT * FROM nurse WHERE nip = $1",nurseLogin.Nip).StructScan(&nurse)
+	err = conn.QueryRowx("SELECT * FROM public.user WHERE nip = $1",nurseLogin.Nip).StructScan(&nurse)
 	if err != nil {
 		if err == sql.ErrNoRows{
 			c.JSON(400, gin.H{"message":"nurse not found"})
@@ -94,14 +94,16 @@ func (h NurseController) NurseLogin(c *gin.Context){
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
-	// check if granted
-	if !nurse.IsGranted {
+	// check if nurse allowed
+	if nurse.Password == nil{
 		c.JSON(400, gin.H{"message":"nurse not have access"})
+		return
 	}
 	if !hash.CheckPasswordHash(nurseLogin.Password, *nurse.Password){
 		c.JSON(400, gin.H{"message":"invalid password"})
 		return
 	}
+
 	accessToken := jwt.SignJWT(nip.ToString, "nurse")
 	c.JSON(200, gin.H{"message":"success","data":gin.H{
 		"userId":nurse.Id,
@@ -133,8 +135,8 @@ func (h NurseController)UpdateNurse(c *gin.Context){
 		return
 	}
 	conn := db.CreateConn()
-	var nurse models.Nurse
-	query := "SELECT * FROM nurse WHERE id::text = $1"
+	var nurse models.User
+	query := "SELECT * FROM public.user WHERE id::text = $1"
 	err = conn.QueryRowx(query, nurseId).StructScan(&nurse)
 	if err != nil {
 		if err == sql.ErrNoRows{ 
@@ -152,7 +154,7 @@ func (h NurseController)UpdateNurse(c *gin.Context){
 		}
 	}
 	// update nurse
-	query = "UPDATE nurse SET nip = $1, name = $2, \"updatedAt\" = $3 WHERE id = $4"
+	query = "UPDATE public.user SET nip = $1, name = $2, \"updatedAt\" = $3 WHERE id = $4"
 	res, err := conn.Exec(query, nurseUpdate.Nip, nurseUpdate.Name, time.Now(), nurseId)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -172,7 +174,7 @@ func (h NurseController)DeleteNurse(c *gin.Context){
 
 	// check if nurse exist
 	conn := db.CreateConn()
-	query := "SELECT id FROM nurse WHERE id = $1"
+	query := "SELECT id FROM public.user WHERE id = $1"
 	var id string
 	err := conn.QueryRow(query, nurseId).Scan(&id)
 	if err!= nil{
@@ -184,7 +186,7 @@ func (h NurseController)DeleteNurse(c *gin.Context){
 		return
 	}
 	// delete 
-	query = "DELETE FROM nurse WHERE id = $1"
+	query = "DELETE FROM public.user WHERE id = $1"
 	res, err := conn.Exec(query, nurseId)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -210,8 +212,8 @@ func (h NurseController)GrantAccess(c *gin.Context){
 	}
 	// check nurse is exist
 	conn:=db.CreateConn()
-	query:= "SELECT * FROM nurse WHERE id::text = $1"
-	var nurse models.Nurse
+	query:= "SELECT * FROM public.user WHERE id::text = $1"
+	var nurse models.User
 	err := conn.QueryRowx(query, nurseId).StructScan(&nurse)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -222,7 +224,7 @@ func (h NurseController)GrantAccess(c *gin.Context){
 		return
 	}
 	hashed_password, _ := hash.HashPassword(input.Password)
-	query = "UPDATE nurse SET password = $1, \"isGranted\" = true, \"updatedAt\" = $2 WHERE id = $3"
+	query = "UPDATE public.user SET password = $1,  \"updatedAt\" = $2 WHERE id = $3"
 	res, err := conn.Exec(query, hashed_password, time.Now(), nurseId)
 	if err!= nil{
 		fmt.Println(err.Error())
