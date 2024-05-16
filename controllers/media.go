@@ -47,10 +47,10 @@ func (h MediaController) UploadImage(c *gin.Context){
 
 	fileName := uuid.New().String() + filepath.Ext(handler.Filename)
 
-	S3_REGION := os.Getenv("S3_REGION")
-	S3_ID := os.Getenv("S3_ID")
-	S3_SECRET_KEY := os.Getenv("S3_SECRET_KEY")
-	S3_BUCKET_NAME := os.Getenv("S3_BUCKET_NAME")
+	S3_REGION := os.Getenv("AWS_REGION")
+	S3_ID := os.Getenv("AWS_ACCESS_KEY_ID")
+	S3_SECRET_KEY := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	S3_BUCKET_NAME := os.Getenv("AWS_S3_BUCKET_NAME")
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(S3_REGION),
 		Credentials: credentials.NewStaticCredentials(S3_ID, S3_SECRET_KEY, ""),
@@ -75,13 +75,20 @@ func (h MediaController) UploadImage(c *gin.Context){
 	}
 
 	// Upload the file to S3
-	_, err = s3Client.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(S3_BUCKET_NAME),
-		Key:    aws.String(fileName),
-		Body:   bytes.NewReader(buffer),
-	})
-
+	// _, err = s3Client.PutObject(&s3.PutObjectInput{
+	// 	Bucket: aws.String(S3_BUCKET_NAME),
+	// 	Key:    aws.String(fileName),
+	// 	Body:   bytes.NewReader(buffer),
+	// })
+   
+    _, err = s3Client.PutObject(&s3.PutObjectInput{
+        Bucket:               aws.String(S3_BUCKET_NAME),
+        Key:                  aws.String(fileName),
+        ACL:                  aws.String("public-read"),
+        Body:                 bytes.NewReader(buffer),
+    })
 	if err != nil {
+		fmt.Println(err.Error())
 		c.JSON(500, gin.H{"message": "Failed to upload file to S3"})
 		return
 	}

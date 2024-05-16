@@ -145,7 +145,7 @@ func (h RecordController) GetAllRecord(c *gin.Context){
 	}
 	defer rows.Close()
 	for rows.Next(){
-		var record models.GetRecord
+		var record models.GetRecord 
 		err = rows.Scan(&record.IdentityDetail.IdentityNumber, &record.IdentityDetail.PhoneNumber, &record.IdentityDetail.Name, &record.IdentityDetail.BirthDate, &record.IdentityDetail.Gender, &record.IdentityDetail.IdentityCardScanImg, &record.Symptoms, &record.Medications, &record.CreatedAt, &record.CreatedBy.Nip, &record.CreatedBy.Name, &record.CreatedBy.UserId)
 		if err != nil {
 			fmt.Println(err.Error())
