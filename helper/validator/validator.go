@@ -3,6 +3,7 @@ package validator
 import (
 	"Week3/models"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -17,9 +18,8 @@ func StringCheck(input string, minLength, maxLength int) bool {
 func ExtractNIP(nip int64) (*models.NIP, error) {
 	nipStr := strconv.FormatInt(nip, 10)
 	
-
 	// check if length below 13
-	if len(nipStr) != 13 {
+	if len(nipStr) < 13 || len(nipStr) > 15 {
 		return nil, errors.New("incorrect nip length")
 	}
 	// get first 3 digits
@@ -50,7 +50,9 @@ func ExtractNIP(nip int64) (*models.NIP, error) {
 	if monthInt < 1 || monthInt > 12 {
 		return nil, errors.New("invalid nip format")
 	} 
-	last3Digits := nipStr[len(nipStr)-3:]
+	lastDigits := nipStr[10:]
+	fmt.Println("lastDigits")
+	fmt.Println(lastDigits)
 	var gender string
 	if genderDigit == '1'{
 		gender = "male"
@@ -64,7 +66,7 @@ func ExtractNIP(nip int64) (*models.NIP, error) {
 		Gender: gender,
 		Year: yearDigits,
 		Month: monthDigits,
-		EndDigits: last3Digits,
+		EndDigits: lastDigits,
 	}, nil
 }
 
