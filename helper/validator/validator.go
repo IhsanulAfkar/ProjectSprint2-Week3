@@ -3,7 +3,6 @@ package validator
 import (
 	"Week3/models"
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -51,8 +50,7 @@ func ExtractNIP(nip int64) (*models.NIP, error) {
 		return nil, errors.New("invalid nip format")
 	} 
 	lastDigits := nipStr[10:]
-	fmt.Println("lastDigits")
-	fmt.Println(lastDigits)
+
 	var gender string
 	if genderDigit == '1'{
 		gender = "male"
@@ -71,16 +69,12 @@ func ExtractNIP(nip int64) (*models.NIP, error) {
 }
 
 func IsURL(s string) bool {
-	// fmt.Println(s)
-	// u, err := url.ParseRequestURI(s)
-	// fmt.Println(u.Scheme)
-	// return err == nil && u.Scheme != "" && u.Host != ""
+
 	regex := `https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$`
 	pattern := regexp.MustCompile(regex)
 	return pattern.MatchString(s)
-	// return govalidator.IsURL(s)
 }
 func IsDateISO860(s string)bool {
-	_, err := time.Parse("2006-01-02", s)
+	_, err := time.Parse("2006-01-02T15:04:05Z07:00", s)
 	return err == nil
 }

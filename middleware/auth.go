@@ -4,7 +4,6 @@ import (
 	"Week3/db"
 	"Week3/helper/jwt"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -42,7 +41,7 @@ func AdminAuthMiddleware(c *gin.Context) {
 	conn := db.CreateConn()
 	res, err := conn.Exec("SELECT 1 FROM public.user WHERE nip = $1 LIMIT 1",id.Nip)
 	if err != nil{
-		fmt.Println(err.Error())
+		 
 		c.AbortWithStatusJSON(500, gin.H{
 			"message":"server error"})
 			return
@@ -65,7 +64,7 @@ func AllAuthMiddleware(c *gin.Context) {
 	}
 	id, err := jwt.ParseToken(token)
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.AbortWithStatusJSON(401, gin.H{
 			"message":err.Error()})
 		return
@@ -79,8 +78,7 @@ func AllAuthMiddleware(c *gin.Context) {
 		c.AbortWithStatusJSON(404, gin.H{"message":"user not found"})
 		return
 	}
-	fmt.Println("token")
-	fmt.Println(id)
+
 	c.Set("userNip",id.Nip)
 	c.Set("role",id.Role)
 	c.Next()

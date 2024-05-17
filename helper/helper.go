@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -12,7 +11,7 @@ func CheckNIP(conn *sqlx.DB, nip int64) bool {
 	var isExist bool
 	err := conn.QueryRow(query,nip).Scan(&isExist)
 	if err!= nil{
-		fmt.Println(err.Error())
+		 
 		return false
 	}
 	return isExist

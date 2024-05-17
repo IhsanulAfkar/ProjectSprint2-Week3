@@ -32,6 +32,7 @@ func Init(ctx context.Context) {
 	// db.DB.SetMaxIdleConns(10)
 	// Migrations
 	// migrate -database "postgresql://root:root@localhost:5432/halo_sus?sslmode=disable" -path db/migrations up
+	// migrate -database "postgresql://postgres:eic3eeR5aec1Aez0EeThao4at0choh6Be@13.215.175.130:5432/halo_sus?sslmode=disable" -path db/migrations up
 }
 func CreateConn() *sqlx.DB{
 	return db

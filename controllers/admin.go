@@ -9,7 +9,6 @@ import (
 	"Week3/helper/validator"
 	"Week3/models"
 	"database/sql"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -55,14 +54,14 @@ func (h AdminController) SignUp(c *gin.Context) {
 	var admin models.User
 	err = conn.QueryRowx(query, nip.ToInt,adminRegister.Name, hashed_password).StructScan(&admin)
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
 
 	accessToken := jwt.SignJWT(nip.ToString,"admin")
 
-	c.JSON(200, gin.H{"message":"success", "data":gin.H{
+	c.JSON(201, gin.H{"message":"success", "data":gin.H{
 		"userId":admin.Id,
 		"nip": admin.Nip,
 		"name":admin.Name,
@@ -127,14 +126,14 @@ func (h AdminController) GetAllUsers(c *gin.Context) {
 	role := c.Query("role")
 	createdAt := c.Query("createdAt")
 	// check nip
-	nipInt, err := strconv.ParseInt(nip, 10, 64)
+	_, err := strconv.ParseInt(nip, 10, 64)
 	if err!= nil {
 		nip = ""
 	}
-	_, err = validator.ExtractNIP(nipInt)
-	if err !=nil{
-		nip = ""
-	}
+	// _, err = validator.ExtractNIP(nipInt)
+	// if err !=nil{
+	// 	nip = ""
+	// }
 	if role != "it" && role !="nurse"{
 		role = ""
 	}
@@ -158,8 +157,9 @@ func (h AdminController) GetAllUsers(c *gin.Context) {
 		argIdx += 1
 	}
 	if nip != ""{
-		queryParams = append(queryParams, " nip = $"+strconv.Itoa(argIdx) +" ") 
-		args = append(args, nip)
+		nipWildcard := nip + "%"
+		queryParams = append(queryParams, " nip::text LIKE $"+strconv.Itoa(argIdx) +" ") 
+		args = append(args, nipWildcard)
 		argIdx += 1
 	}
 	// lazy & slow approach, should be optimized
@@ -185,11 +185,11 @@ func (h AdminController) GetAllUsers(c *gin.Context) {
 
 	baseQuery +=  " LIMIT " + strconv.Itoa(limit) + " OFFSET " + strconv.Itoa(offset)
 	conn := db.CreateConn()
-	fmt.Println(baseQuery)
+	 
 	users  := make([]models.GetUser,0)
 	err = conn.Select(&users, baseQuery,args...)
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}

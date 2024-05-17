@@ -6,7 +6,6 @@ import (
 	"Week3/helper"
 	"Week3/helper/validator"
 	"Week3/models"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -22,10 +21,14 @@ func (h PatientController) CreatePatient(c *gin.Context) {
 			"message":err.Error()})
 		return
     }
-	fmt.Println(patientForm)
+	
 	identityStr := strconv.FormatInt(patientForm.IdentityNumber, 10)
 	if len(identityStr) != 16 {
 		c.JSON(400, gin.H{"message":"incorrect identityNumber"})
+		return
+	}
+	if patientForm.PhoneNumber == "" {
+		c.JSON(400, gin.H{"message":"incorrect phoneNumber"})
 		return
 	}
 	if patientForm.PhoneNumber[:3] != "+62" || !validator.StringCheck(patientForm.PhoneNumber, 10, 15){
@@ -59,7 +62,7 @@ func (h PatientController) CreatePatient(c *gin.Context) {
 	query := `INSERT INTO patient ("identityNumber", name, "phoneNumber", "birthDate", gender, "identityCardScanImg") VALUES ($1,$2,$3,$4,$5,$6)`
 	res, err := conn.Exec(query, patientForm.IdentityNumber, patientForm.Name, patientForm.PhoneNumber, patientForm.BirthDate, patientForm.Gender, patientForm.IdentityCardScanImg)
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
@@ -83,7 +86,7 @@ func (h PatientController) GetAllPatient(c *gin.Context){
 	name := strings.ToLower(c.Query("name"))
 	phoneNumber := c.Query("phoneNumber")
 	createdAt := c.Query("createdAt")
-	identityNumInt, err := strconv.ParseInt(identityNumber, 10, 64)
+	_, err := strconv.ParseInt(identityNumber, 10, 64)
 	if err != nil{
 		identityNumber = ""
 	}
@@ -96,8 +99,7 @@ func (h PatientController) GetAllPatient(c *gin.Context){
 	// queryParams := make(map[string]interface{})
 	var queryParams []string
 	argIdx := 1
-	fmt.Println("name")
-	fmt.Println(name)
+
 	if name != ""{
 		nameWildcard := "%" + name +"%"
 		queryParams = append(queryParams," name ILIKE $"+strconv.Itoa(argIdx) +" ") 
@@ -111,8 +113,9 @@ func (h PatientController) GetAllPatient(c *gin.Context){
 		argIdx += 1
 	}
 	if identityNumber != ""{
-		queryParams = append(queryParams, " \"identityNumber\" = $"+strconv.Itoa(argIdx) + " ")
-		args = append(args, identityNumInt)
+		identityWild := identityNumber+"%"
+		queryParams = append(queryParams, " \"identityNumber\"::text LIKE $"+strconv.Itoa(argIdx) + " ")
+		args = append(args, identityWild)
 	}
 	if len(queryParams) > 0 {
 		allQuery := strings.Join(queryParams, " AND")
@@ -128,11 +131,11 @@ func (h PatientController) GetAllPatient(c *gin.Context){
 	}
 	baseQuery +=  " LIMIT " + strconv.Itoa(limit) + " OFFSET " + strconv.Itoa(offset)
 	conn := db.CreateConn()
-	fmt.Println(baseQuery)
+	 
 	patients := make([]models.Patient,0)
 	err = conn.Select(&patients, baseQuery, args...)
 	if err != nil{
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}

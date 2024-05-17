@@ -27,7 +27,7 @@ func (h MediaController) UploadImage(c *gin.Context){
 	}
 	file, handler, err := c.Request.FormFile("file")
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
@@ -56,7 +56,7 @@ func (h MediaController) UploadImage(c *gin.Context){
 		Credentials: credentials.NewStaticCredentials(S3_ID, S3_SECRET_KEY, ""),
 	})
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message": "Failed to create AWS session"})
 		return
 	}
@@ -88,7 +88,7 @@ func (h MediaController) UploadImage(c *gin.Context){
         Body:                 bytes.NewReader(buffer),
     })
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message": "Failed to upload file to S3"})
 		return
 	}

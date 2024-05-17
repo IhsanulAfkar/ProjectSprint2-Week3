@@ -9,7 +9,7 @@ import (
 	"Week3/helper/validator"
 	"Week3/models"
 	"database/sql"
-	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -52,7 +52,7 @@ func (h NurseController) CreateNurse(c *gin.Context){
 	var nurse models.User
 	err = conn.QueryRowx(query,nip.ToInt, nurseRegister.Name, nurseRegister.IdentityCardScanImg).StructScan(&nurse)
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
@@ -121,6 +121,23 @@ func (h NurseController)UpdateNurse(c *gin.Context){
 		return
     }
 	nurseId := c.Param("nurseId")
+	
+	conn := db.CreateConn()
+	var nurse models.User
+	query := "SELECT * FROM public.user WHERE id::text = $1"
+	err := conn.QueryRowx(query, nurseId).StructScan(&nurse)
+	if err != nil {
+		if err == sql.ErrNoRows{ 
+			c.JSON(404, gin.H{"message":"nurse not found"})
+			return
+		}
+		c.JSON(500, gin.H{"message":"server error"})
+		return
+	}
+	if strconv.FormatInt(nurse.Nip, 10)[:3] != "303"{
+		c.JSON(404, gin.H{"message":"nurse not found"})
+		return
+	}
 	if !validator.StringCheck(nurseUpdate.Name, 5,50){
 		c.JSON(400, gin.H{"message":"invalid name"})
 		return
@@ -131,19 +148,7 @@ func (h NurseController)UpdateNurse(c *gin.Context){
 		return
 	}
 	if nip.First3Digits != "303"{
-		c.JSON(400,gin.H{"message":"invalid nip"})
-		return
-	}
-	conn := db.CreateConn()
-	var nurse models.User
-	query := "SELECT * FROM public.user WHERE id::text = $1"
-	err = conn.QueryRowx(query, nurseId).StructScan(&nurse)
-	if err != nil {
-		if err == sql.ErrNoRows{ 
-			c.JSON(404, gin.H{"message":"nurse not found"})
-			return
-		}
-		c.JSON(500, gin.H{"message":"server error"})
+		c.JSON(404,gin.H{"message":"invalid nip"})
 		return
 	}
 	if nurse.Nip != nip.ToInt {
@@ -153,11 +158,12 @@ func (h NurseController)UpdateNurse(c *gin.Context){
 			return
 		}
 	}
+	
 	// update nurse
 	query = "UPDATE public.user SET nip = $1, name = $2, \"updatedAt\" = $3 WHERE id = $4"
 	res, err := conn.Exec(query, nurseUpdate.Nip, nurseUpdate.Name, time.Now(), nurseId)
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
@@ -174,9 +180,9 @@ func (h NurseController)DeleteNurse(c *gin.Context){
 
 	// check if nurse exist
 	conn := db.CreateConn()
-	query := "SELECT id FROM public.user WHERE id = $1"
-	var id string
-	err := conn.QueryRow(query, nurseId).Scan(&id)
+	query := "SELECT * FROM public.user WHERE id = $1"
+	var user models.User
+	err := conn.QueryRowx(query, nurseId).StructScan(&user)
 	if err!= nil{
 		if err == sql.ErrNoRows{
 			c.JSON(404, gin.H{"message":"nurse not found"})
@@ -185,15 +191,20 @@ func (h NurseController)DeleteNurse(c *gin.Context){
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
+	nipStr := strconv.FormatInt(user.Nip, 10)
+
+	if nipStr[:3] != "303"{
+		c.JSON(404, gin.H{"message":"no nurse found"})
+		return
+	}
 	// delete 
 	query = "DELETE FROM public.user WHERE id = $1"
-	res, err := conn.Exec(query, nurseId)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	rows,_ :=res.RowsAffected()
+
+	res, _ := conn.Exec(query, nurseId)
+	rows, _  := res.RowsAffected()
 	if rows == 0 {
 		c.JSON(500, gin.H{"message":"server error, no record deleted"})
+		return
 	}
 	c.JSON(200, gin.H{"message":"delete nurse success"})
 }
@@ -210,6 +221,7 @@ func (h NurseController)GrantAccess(c *gin.Context){
 		c.JSON(400, gin.H{"message":"invalid password"})
 		return
 	}
+	
 	// check nurse is exist
 	conn:=db.CreateConn()
 	query:= "SELECT * FROM public.user WHERE id::text = $1"
@@ -227,7 +239,7 @@ func (h NurseController)GrantAccess(c *gin.Context){
 	query = "UPDATE public.user SET password = $1,  \"updatedAt\" = $2 WHERE id = $3"
 	res, err := conn.Exec(query, hashed_password, time.Now(), nurseId)
 	if err!= nil{
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}

@@ -19,7 +19,7 @@ func (h RecordController) CreateRecord(c *gin.Context){
 	userNip := fmt.Sprintf("%s", c.MustGet("userNip"))
 	nipInt, err := strconv.ParseInt(userNip, 10, 64)
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		return
 	}
 	var recordForm forms.CreateRecord
@@ -33,7 +33,6 @@ func (h RecordController) CreateRecord(c *gin.Context){
 		c.JSON(400, gin.H{"message":"invalid identity"})
 		return
 	}
-	fmt.Println(len(recordForm.Symptoms))
 	if !validator.StringCheck(recordForm.Symptoms, 1, 2000){
 		c.JSON(400, gin.H{"message":"invalid symptoms"})
 		return	
@@ -135,11 +134,11 @@ func (h RecordController) GetAllRecord(c *gin.Context){
 	}
 	baseQuery +=  " LIMIT " + strconv.Itoa(limit) + " OFFSET " + strconv.Itoa(offset)
 	conn := db.CreateConn()
-	fmt.Println(baseQuery)
+	 
 	records := make([]models.GetRecord,0)
 	rows, err := conn.Query(baseQuery, args...)
 	if err != nil {
-		fmt.Println(err.Error())
+		 
 		c.JSON(500, gin.H{"message":"server error"})
 		return
 	}
@@ -148,7 +147,7 @@ func (h RecordController) GetAllRecord(c *gin.Context){
 		var record models.GetRecord 
 		err = rows.Scan(&record.IdentityDetail.IdentityNumber, &record.IdentityDetail.PhoneNumber, &record.IdentityDetail.Name, &record.IdentityDetail.BirthDate, &record.IdentityDetail.Gender, &record.IdentityDetail.IdentityCardScanImg, &record.Symptoms, &record.Medications, &record.CreatedAt, &record.CreatedBy.Nip, &record.CreatedBy.Name, &record.CreatedBy.UserId)
 		if err != nil {
-			fmt.Println(err.Error())
+			 
 			c.JSON(500, gin.H{"message":"server error"})
 			return
 		}
