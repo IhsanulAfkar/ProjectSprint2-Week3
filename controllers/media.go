@@ -37,9 +37,7 @@ func (h MediaController) UploadImage(c *gin.Context){
 		c.JSON(400, gin.H{"message": "File size must be between 10 KB and 20 MB"})
 		return
 	}
-	fmt.Println(fileSize)
 	fileType := handler.Header.Get("Content-Type")
-	fmt.Println(fileType)
 	if fileType != "image/jpeg" && fileType != "image/jpg" {
 		c.JSON(400, gin.H{"error": "File must be a JPEG image"})
 		return
