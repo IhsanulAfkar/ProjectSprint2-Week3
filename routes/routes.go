@@ -53,8 +53,10 @@ func Init() *gin.Engine {
 				record.POST("/", recordController.CreateRecord)
 				record.GET("/", recordController.GetAllRecord)
 			}
-			v1.POST("/image",mediaController.UploadImage)
+			
 		}
+		v1.Use(middleware.AllAuthMiddleware)
+		v1.POST("/image",mediaController.UploadImage)
 	}
 	return router
 }

@@ -21,14 +21,21 @@ import (
 type MediaController struct{}
 
 func (h MediaController) UploadImage(c *gin.Context){
-	err := c.Request.ParseMultipartForm(10 << 20) // max 10 MB
-	if err != nil {
-		c.JSON(500, gin.H{"message":"server error"})
+	// err := c.Request.ParseMultipartForm(10 << 20) // max 10 MB
+	// if err != nil {
+	// 	c.JSON(400, gin.H{"message":"server error"})
+	// }
+	if c.Request.ContentLength == 0 {
+		c.JSON(400, gin.H{"message": "Request body is empty"})
+		return
 	}
 	file, handler, err := c.Request.FormFile("file")
 	if err != nil {
-		 
-		c.JSON(500, gin.H{"message":"server error"})
+		c.JSON(400, gin.H{"message":"server error"})
+		return
+	}
+	if file == nil {
+		c.JSON(400, gin.H{"message":"image cannot empty"})
 		return
 	}
 	defer file.Close()
@@ -37,13 +44,13 @@ func (h MediaController) UploadImage(c *gin.Context){
 		c.JSON(400, gin.H{"message": "File size must be between 10 KB and 20 MB"})
 		return
 	}
-	fileType := handler.Header.Get("Content-Type")
-	if fileType != "image/jpeg" && fileType != "image/jpg" {
+	fileExt := filepath.Ext(handler.Filename)
+	if fileExt != ".jpg" && fileExt != ".jpeg" {
 		c.JSON(400, gin.H{"error": "File must be a JPEG image"})
 		return
 	}
 
-	fileName := uuid.New().String() + filepath.Ext(handler.Filename)
+	fileName := uuid.New().String() + fileExt
 
 	S3_REGION := os.Getenv("AWS_REGION")
 	S3_ID := os.Getenv("AWS_ACCESS_KEY_ID")
@@ -54,7 +61,6 @@ func (h MediaController) UploadImage(c *gin.Context){
 		Credentials: credentials.NewStaticCredentials(S3_ID, S3_SECRET_KEY, ""),
 	})
 	if err != nil {
-		 
 		c.JSON(500, gin.H{"message": "Failed to create AWS session"})
 		return
 	}
