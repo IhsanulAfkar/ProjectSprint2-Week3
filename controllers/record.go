@@ -19,7 +19,8 @@ func (h RecordController) CreateRecord(c *gin.Context){
 	userNip := fmt.Sprintf("%s", c.MustGet("userNip"))
 	nipInt, err := strconv.ParseInt(userNip, 10, 64)
 	if err != nil {
-		 
+		c.JSON(400, gin.H{
+			"message":err.Error()})
 		return
 	}
 	var recordForm forms.CreateRecord
@@ -48,7 +49,7 @@ func (h RecordController) CreateRecord(c *gin.Context){
 	err = conn.QueryRow(query, recordForm.IdentityNumber).Scan(&patientId)
 	if err != nil {
 		if err ==  sql.ErrNoRows {
-			c.JSON(400, gin.H{"message":"identity doesn't exist"})
+			c.JSON(404, gin.H{"message":"identity doesn't exist"})
 			return
 		}
 		c.JSON(500, gin.H{"message":"identity doesn't exist"})
@@ -76,15 +77,15 @@ func (h RecordController) GetAllRecord(c *gin.Context){
 	if errOffset != nil || offset < 0 {
 		offset = 0
 	}
-	identityNumber := c.Query("identityNumber")
+	identityNumber := c.Query("identityDetail.identityNumber")
 	
 	identityInt, err := strconv.ParseInt(identityNumber, 10,64)
 	
 	if err != nil{
 		identityNumber = ""
 	}
-	userId := c.Query("userId")
-	nip := c.Query("nip")
+	userId := c.Query("createdBy.userId")
+	nip := c.Query("createdBy.nip")
 	createdAt := c.Query("createdAt")
 	nipInt, err := strconv.ParseInt(nip, 10, 64)
 	if err!= nil {

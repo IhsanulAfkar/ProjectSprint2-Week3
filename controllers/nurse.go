@@ -70,10 +70,10 @@ func (h NurseController) NurseLogin(c *gin.Context){
 			"message":err.Error()})
 		return
     }
-	if !validator.StringCheck(nurseLogin.Password, 5, 33) {
-		c.JSON(400, gin.H{"message":"invalid password"})
-		return 
-	}
+	// if !validator.StringCheck(nurseLogin.Password, 5, 33) {
+	// 	c.JSON(400, gin.H{"message":"invalid password"})
+	// 	return 
+	// }
 	nip, err := validator.ExtractNIP(nurseLogin.Nip)
 	if err!= nil{
 		c.JSON(400,gin.H{"message":err.Error()})
