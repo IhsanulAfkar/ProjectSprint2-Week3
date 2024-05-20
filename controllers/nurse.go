@@ -9,6 +9,7 @@ import (
 	"Week3/helper/validator"
 	"Week3/models"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -217,6 +218,7 @@ func (h NurseController)GrantAccess(c *gin.Context){
 			"message":err.Error()})
 		return
     }
+	fmt.Println(len(input.Password))
 	if !validator.StringCheck(input.Password, 5, 33) {
 		c.JSON(400, gin.H{"message":"invalid password"})
 		return
