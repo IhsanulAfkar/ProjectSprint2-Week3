@@ -3,7 +3,6 @@ package validator
 import (
 	"Week3/models"
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -12,7 +11,6 @@ import (
 func StringCheck(input string, minLength, maxLength int) bool {
 	// minLength += 1
 	length := len(input)
-	fmt.Println(length, minLength)
 	// fmt.Println(length >= minLength && length <= maxLength)
 	return length >= minLength && length <= maxLength
 }
